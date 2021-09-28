@@ -15,7 +15,7 @@ class Player(pygame.sprite.Sprite):
 
 
         # Player stats and settings
-        self.player_speed   = 5
+        self.player_speed   = 8
         self.player_gravity = 0
 
         # Graphics and animation collection
@@ -57,7 +57,6 @@ class Player(pygame.sprite.Sprite):
         self.active_cock_attack     = False     # true if cock attack active
 
         self.attack_animation_index = 0         # hold attack animation index
-
 
 
     # handle player walk
@@ -229,6 +228,10 @@ class Player(pygame.sprite.Sprite):
         # deactivate attack animations if none active
         self.attack_animation = False
 
+    # return player center x pos
+    def player_x_center(self):
+        # return given player rect with equal 60
+        return self.rect.centerx
 
     # update sprite
     def update(self):

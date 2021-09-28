@@ -1,6 +1,4 @@
-__pycache__/import_resource.cpython-39.pyc
-Modules/__pycache__/__init__.cpython-39.pyc
-Modules/__pycache__/settings.cpython-39.pyc
-Modules/Player/__pycache__/__init__.cpython-39.pyc
-Modules/Player/__pycache__/Player.cpython-39.pyc
 __pycache__/resource_manager.cpython-39.pyc
+Modules/__pycache__/settings.cpython-39.pyc
+Modules/Enemies/__pycache__/enemy.cpython-39.pyc
+Modules/Player/__pycache__/Player.cpython-39.pyc
