@@ -9,4 +9,4 @@ class GameSettings():
         self.screen_height  =  600
 
         # floor level for game
-        self.floor = 480
+        self.floor = 550

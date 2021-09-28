@@ -1,4 +1,4 @@
-from import_resource import get_JanTheMan
+from Modules.settings import GameSettings
 from Modules.Player.Player import Player
 from sys import exit
 import pygame
@@ -7,24 +7,27 @@ import pygame
 # initialize pygame
 pygame.init()
 
+## SETTINGS
+
+# get common settings for settings class
+settings = GameSettings()
+
 # create screen
-screen = pygame.display.set_mode((1200, 600))
+screen = pygame.display.set_mode((settings.screen_width, settings.screen_height))
 pygame.display.set_caption("Kjetil the Game")
 
-# set clock
+# Clock and framerate
 clock = pygame.time.Clock()
+FPS = 60
 
 
 ####    BACKGROUND    ####
-sky_surf = pygame.Surface((1200,450))
-sky_surf.fill("blue")
-
-ground_surf = pygame.Surface((1200,150))
-ground_surf.fill("green")
+# DEV :: fix this
+bg_image = pygame.image.load("oslo.png").convert()
+bg_image = pygame.transform.scale(bg_image, (settings.screen_width, settings.screen_height))
 
 
 ####    Player    ###
-
 player = pygame.sprite.GroupSingle()
 player.add(Player())
 
@@ -38,13 +41,12 @@ while True:
         # check if quit event
         if event.type == pygame.QUIT:
             pygame.quit()
-            quit()
+            exit()
         
         # other events here
     
     # draw background:
-    screen.blit(sky_surf, (0,0))
-    screen.blit(ground_surf, (0,450))
+    screen.blit(bg_image, (0,0))
 
 
     player.draw(screen)
@@ -53,4 +55,4 @@ while True:
     # update display
     pygame.display.update()
     # game tick
-    clock.tick(60)
+    clock.tick(FPS)
