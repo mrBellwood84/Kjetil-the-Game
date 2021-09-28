@@ -15,6 +15,11 @@ class Player(pygame.sprite.Sprite):
 
 
         # Player stats and settings
+
+        self.player_health  = 200
+        self.player_attack  = 15
+
+
         self.player_speed   = 8
         self.player_gravity = 0
 
@@ -58,9 +63,14 @@ class Player(pygame.sprite.Sprite):
 
         self.attack_animation_index = 0         # hold attack animation index
 
+        self.damage_animation       = False
+        self.damage_animation_timer = 0
+
 
     # handle player walk
     def handle_walk(self):
+
+        if self.damage_animation: return
 
         # get keys
         keys = pygame.key.get_pressed()
@@ -85,6 +95,8 @@ class Player(pygame.sprite.Sprite):
     # handle player jump
     def handle_jump(self):
 
+        if self.damage_animation: return
+
         # handle jump input
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE] and self.rect.bottom == self.settings.floor:
@@ -107,7 +119,7 @@ class Player(pygame.sprite.Sprite):
     def handle_move_animations(self):
         
         # disable movement animation if acitve attack
-        if self.attack_animation: return
+        if self.attack_animation or self.damage_animation: return
 
         # handle jump only if active
         if self.jump_animation:
@@ -137,6 +149,8 @@ class Player(pygame.sprite.Sprite):
     # handle attack
     def handle_attack(self):
         
+        if self.damage_animation: return
+
         #abort if attack is already executed
         if self.attack_animation: return
 
@@ -161,6 +175,23 @@ class Player(pygame.sprite.Sprite):
             self.active_cock_attack = True
             return
 
+
+    # handle player damage
+    def handle_player_damage(self, damage):
+
+        if self.damage_animation:
+            self.damage_animation_timer -= 0.1
+            if self.damage_animation_timer <= 0:
+                self.damage_animation = False
+            self.image = self.player_damage
+
+
+        if damage == 0: return
+        
+        self.player_health -= damage
+        self.damage_animation = True
+        self.damage_animation_timer = 1
+        print(self.player_health)
 
     # handle attack animation
     def handle_attack_animation(self):
@@ -228,17 +259,19 @@ class Player(pygame.sprite.Sprite):
         # deactivate attack animations if none active
         self.attack_animation = False
 
+
     # return player center x pos
     def player_x_center(self):
         # return given player rect with equal 60
         return self.rect.centerx
 
     # update sprite
-    def update(self):
+    def update(self, damage):
 
         # handle movement
         self.handle_walk()
         self.handle_jump()
+        self.handle_player_damage(damage)
         self.handle_move_animations()
 
         # handle attack

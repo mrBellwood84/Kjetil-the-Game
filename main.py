@@ -26,10 +26,6 @@ FPS = 60                        # static framerate
 # game variables
 player_pos = 0                  # hold player position for enemy movement [rect left, rect right]
 
-# DEV :: player health
-p_health = 100
-
-
 
 # Game loop functions
 def draw_game_background():
@@ -65,21 +61,23 @@ while True:
     draw_game_background()
 
 
+    damage = 0      # damage recived by sprites
+
     # draw enemies
     enemies.draw(screen)
     
     # update enemies individualy for attack results
     sprites = enemies.sprites()
     for s in sprites:
-        res = s.update(player_pos)
+        res = s.update(player_pos)  # update return damage if any
         if res != None:
-            p_health -= res
-            print(p_health)
+            damage += res
+    
 
 
     # draw and update player
     player.draw(screen)
-    player.update()
+    player.update(damage)
     player_pos = player.sprites()[0].player_x_center()
 
 
