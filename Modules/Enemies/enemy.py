@@ -11,6 +11,22 @@ sprite_list = [
     "chuck",        # 4, boss
 ]
 
+sprites_health = [
+    30,     # hunk
+    30,     # bitch
+    1000,   # fancypants
+    300,    # arnold
+    500     # chuck
+]
+
+sprites_attack = [
+    5,      # hunk
+    3,      # bitch
+    1,      # fancypants
+    10,     # arnold
+    20,     # chuck
+]
+
 class Enemy(pygame.sprite.Sprite):
 
     def __init__(self, sprite_index):
@@ -24,9 +40,21 @@ class Enemy(pygame.sprite.Sprite):
         self.sprite_index   = sprite_index
         self.sprite_name    = sprite_list[sprite_index]
 
-        self.sprite_speed   = 6
 
-        self.player_x_pos = 0
+        # stats for health and attacj
+        self.sprite_health  = sprites_health[sprite_index]
+        self.sprite_attack  = sprites_attack[sprite_index]
+
+        self.sprite_speed       = 4
+
+        self.walk_block         = False
+        self.walk_block_timer   = 0
+
+        self.attack_block       = False
+        self.attack_block_timer = 0
+
+        self.attack_result  = None 
+        self.player_x_pos   = 0           # hold player center x
 
 
         # Graphics and animation
@@ -53,13 +81,13 @@ class Enemy(pygame.sprite.Sprite):
         self.orient_left        = False     # hold orientation for walk or attack
         
         self.walk_animation     = False
-        self.walk_block         = False
         self.attack_animation   = False
         self.damage_animation   = False
 
         self.dead_animation     = False     # true if enemy is dead, block other animations
 
-        self.animation_index    = 0         # index for all animation
+        self.walk_animation_index       = 0     # index for walk animation
+        self.attack_animation_index     = 0     # index for attack animaton
 
 
     # handle walk toward player
@@ -69,6 +97,13 @@ class Enemy(pygame.sprite.Sprite):
         # stop any walk if sprite is dead
         if self.dead_animation:
             self.image = self.sprite_dead
+            return
+        
+        # handle walkblock
+        if self.walk_block:
+            self.walk_block_timer -= 0.1
+            if self.walk_block_timer <= 0:
+                self.walk_block = False
             return
         
 
@@ -82,6 +117,12 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.x -= self.sprite_speed
             self.walk_animation = True
             return
+
+        # move backward right
+        if to_left and not self.walk_block and (self.rect.centerx - self.player_x_pos) < 55:
+            self.rect.x += self.sprite_speed
+            self.walk_animation = True
+            return
         
         # move right
         if not to_left and self.rect.right < self.player_x_pos and not self.walk_block:
@@ -89,14 +130,68 @@ class Enemy(pygame.sprite.Sprite):
             self.walk_animation = True
             return
         
+        # move backward left
+        if not to_left and not self.walk_block and (self.player_x_pos - self.rect.centerx) < 55:
+            self.rect.x -= self.sprite_speed
+            self.walk_animation = True
+            return
+        
         # if this point reached, turn of walk animation
         self.walk_animation = False
 
+    # resolves executed attacj
+    def resolve_attack(self):
+
+        self.attack_block = True        # set timeout for next attack
+        self.attack_block_timer = 10    # set timer for countdown
+
+        in_range = False
+
+        is_left = self.rect.centerx > self.player_x_pos   # get player direction
+
+        # check if player is in reach left
+        if is_left and self.orient_left:
+            dist = self.rect.centerx - self.player_x_pos
+            if dist > 50 and dist < 80:
+                in_range = True
+        
+        # check if player is in reach right
+        if not is_left and not self.orient_left:
+            dist =  self.player_x_pos - self.rect.centerx
+            if dist > 50 and dist < 80:
+                in_range = True
+        
+        # if player was in reach, set result at sprite attack value
+        if in_range: return self.sprite_attack
+
+
     # handle attack
     def handle_attack(self):
-        pass
 
-    # handle death
+        self.attack_result = None
+
+        # return if sprite is dead
+        if self.dead_animation: return
+        
+        # check if attack is blocked
+        if self.attack_block:
+            self.attack_block_timer -= 1
+            if self.attack_block_timer <= 0:
+                self.attack_block = False
+            return
+
+        # check if player in reach
+        player_distance = abs(self.player_x_pos - self.rect.centerx)
+        in_reach = player_distance <= 70 and player_distance >= 50     
+
+        if in_reach:
+            self.walk_block = True
+            self.walk_block_timer = 1
+            self.attack_animation = True
+            
+
+
+    # handle damage / death
     def handle_damage(self):
         pass
 
@@ -113,16 +208,32 @@ class Enemy(pygame.sprite.Sprite):
             group = self.sprite_walk_left if self.orient_left else self.sprite_walk_right
 
             # increment walk animation
-            self.animation_index += 0.2
+            self.walk_animation_index += 0.2
 
             # secure index
-            if self.animation_index > len(group):
-                self.animation_index = 0
+            if self.walk_animation_index > len(group):
+                self.walk_animation_index = 0
             
             # adjust image and return
-            self.image = group[int(self.animation_index)]
+            self.image = group[int(self.walk_animation_index)]
             return
-    
+
+        # attack animation and attack resolve
+        if self.attack_animation and not self.attack_block:
+            
+            # get animation group
+            group = self.sprite_attack_left if self.orient_left else self.sprite_attack_right
+
+            # incerement attack animation index
+            self.attack_animation_index += 0.2
+
+            # secure attack index
+            if self.attack_animation_index > len(group):
+                self.attack_animation_index = 0                 # reset attack index
+                self.attack_animation: False                    # cancel attack animation
+                self.attack_result = self.resolve_attack()      # resolve attack
+            self.image = group[int(self.attack_animation_index)]
+            return
 
         self.image = self.sprite_stand
 
@@ -141,3 +252,5 @@ class Enemy(pygame.sprite.Sprite):
         self.handle_animations()
 
         self.update_position_data(player_pos)
+
+        return self.attack_result

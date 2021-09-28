@@ -26,6 +26,11 @@ FPS = 60                        # static framerate
 # game variables
 player_pos = 0                  # hold player position for enemy movement [rect left, rect right]
 
+# DEV :: player health
+p_health = 100
+
+
+
 # Game loop functions
 def draw_game_background():
     bg_image_path = os.path.join("resources", "images","oslo.png")
@@ -41,7 +46,7 @@ player.add(Player())
 
 # add enemy sprite group
 enemies = pygame.sprite.Group()
-foe = Enemy(1)
+foe = Enemy(4)
 enemies.add(foe)
 
 # main game loop
@@ -60,15 +65,20 @@ while True:
     draw_game_background()
 
 
-    # draw and update enemies
+    # draw enemies
     enemies.draw(screen)
-    enemies.update(player_pos)
-
+    
+    # update enemies individualy for attack results
+    sprites = enemies.sprites()
+    for s in sprites:
+        res = s.update(player_pos)
+        if res != None:
+            p_health -= res
+            print(p_health)
 
 
     # draw and update player
     player.draw(screen)
-
     player.update()
     player_pos = player.sprites()[0].player_x_center()
 
