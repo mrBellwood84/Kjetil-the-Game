@@ -1,4 +1,5 @@
-from Modules.Player.PlayerReport import PlayerReport
+from Modules.Enemies.EnemyReport import EnemyReport
+from Modules.Player.PlayerReport import DamageReport, PlayerReport
 from resource_manager import flip_surface_list, get_sprite_surface
 from Modules.settings import GameSettings
 import pygame
@@ -20,21 +21,24 @@ class Player(pygame.sprite.Sprite):
         self.player_health  = 200   # player health
         self.player_attack  = 15    # player attack damage
 
+        self.sperm_bonus    = 0     # hold sperm
+        self.shit_bonus     = 0     # hold shit
+
         self.is_dead = False        # game end when this is true
 
         self.player_speed   = 8     # player speed
         self.player_gravity = 0     # gravity for jump
 
 
-        self.attack_resolutions = []    # hold attack resolutions for player
-        self.enemies_report     = []    # hold enemies report
+        self.attack_resolutions = []        # hold attack resolutions for player
+        self.enemies_report     = []        # hold enemies report
 
 
         # Graphics and animation collection
         self.player_standing            = get_sprite_surface("jantheman", "stand")
         self.player_jumping             = get_sprite_surface("jantheman", "jump")
 
-        self.player_damaged             = [get_sprite_surface('jantheman', 'damage'), get_sprite_surface('jantheman', 'damage') ]
+        self.player_damaged             = get_sprite_surface("jantheman","damage",2)
 
         self.player_walk_right          = get_sprite_surface("jantheman", "walk", 2)
         self.player_walk_left           = flip_surface_list(self.player_walk_right)
@@ -45,11 +49,11 @@ class Player(pygame.sprite.Sprite):
         self.player_cock_attack_right   = get_sprite_surface("jantheman", "cock", 4)
         self.player_cock_attack_left    = flip_surface_list(self.player_cock_attack_right)
 
-        self.player_ass_attack_right    = get_sprite_surface("jantheman", 'ass', 2)
+        self.player_ass_attack_right    = get_sprite_surface("jantheman", 'ass', 3)
         self.player_ass_attack_left     = flip_surface_list(self.player_ass_attack_right)
 
-        self.sperm_explode  = []
-        self.shit_explode = []
+        self.sperm_explode              = get_sprite_surface("jantheman", 'sperm', 5)
+        self.shit_explode               = get_sprite_surface("jantheman", "shit", 6)  
 
 
         # Initial player image and rectanggle
@@ -86,7 +90,7 @@ class Player(pygame.sprite.Sprite):
 
         self.sperm_explode_animation    = False     # true if sperm exlpode
         self.shit_explode_animation     = False     # true if shit explode
-        self.explotion_animation_index  = 0         # index for explosion animation
+        self.explosion_animation_index  = 0         # index for explosion animation
 
 
     # handle input data
@@ -96,11 +100,35 @@ class Player(pygame.sprite.Sprite):
 
         # handle player damage
         for report in input_data:
+
+
+            if report.kill_bonus == 1:
+                self.shit_bonus += 0.3
+            if report.kill_bonus == 2:
+                self.sperm_bonus += 0.3
+            
+            if self.shit_bonus >= 4:
+                self.player_health = 0
+                self.damage_animation = True
+                self.shit_explode_animation = True
+                self.no_movement = True
+                return
+            
+            if self.sperm_bonus >= 4:
+                self.player_health = 0
+                self.damage_animation = True
+                self.sperm_explode_animation = True
+                self.no_movement = True
+                return
+
+
             if report.damage != None:
                 self.player_health      -= report.damage    # subtract damage from health
                 self.damage_animation   = True              # set damage animation as true
                 self.no_movement        = True              # set no movement as true
-                print("health:", self.player_health)
+            
+            if self.player_health <= 0:
+                self.shit_explode_animation = True
 
 
     # handle player walk
@@ -135,7 +163,6 @@ class Player(pygame.sprite.Sprite):
         # handle jump input
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE] and self.rect.bottom == self.settings.floor:
-            print("jump")
             self.player_gravity = -20
             self.jump_animation = True
 
@@ -151,11 +178,30 @@ class Player(pygame.sprite.Sprite):
                 self.jump_animation = False
 
 
+    # orient attack toward closest enemy
+    def _orient_attack_direction(self):
+
+        if self.enemies_report == []: return        # return if no enemy reports
+
+        closest = self.settings.screen_width        # set inital closest to screen widht
+
+        for enemy in self.enemies_report:           # loop enemy list
+
+            dist = abs(self.rect.centerx - enemy.pos)   # check distance to enemy
+
+            if closest > dist:      # if enemy is closer
+
+                self.orient_left = True if (self.rect.centerx > enemy.pos) else False    # check if enemy is to the right of player
+                closest = dist                  # set new closest distance
+
+
     # handle attack
     def handle_attack(self):
         
         # block attack if no mvement order
         if self.no_movement: return
+
+        self._orient_attack_direction()
 
         # get keys
         keys = pygame.key.get_pressed()
@@ -164,21 +210,18 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_s]:
             self.no_movement        = True
             self.active_slap_attack = True
-            print("face closest enemy function here")
             return
 
         # check ass attack
         if keys[pygame.K_e]:
             self.no_movement        = True
             self.active_ass_attack  = True
-            print("face closest enemy function here")
             return
         
         # check cock attack
         if keys[pygame.K_q]:
             self.no_movement        = True
             self.active_cock_attack = True
-            print("face closest enemy function here")
             return
 
 
@@ -212,15 +255,37 @@ class Player(pygame.sprite.Sprite):
         # set standing if no above is valid
         self.image = self.player_standing
 
+
+    # resolve slap attack
+    def _resolve_slap_attack(self):
+        
+        for enemy in self.enemies_report:
+            
+            in_range = False
+            is_left = self.rect.centerx > enemy.pos
+
+            if is_left and self.orient_left:
+                dist = self.rect.centerx - enemy.pos
+                if dist > 50 and dist < 80:
+                    in_range = True
+            
+            if not is_left and not self.orient_left:
+                dist = enemy.pos - self.rect.centerx
+                if dist > 50 and dist < 80:
+                    in_range = True
+
+            if in_range:
+
+                print("attack success")
+                report = DamageReport(enemy.id, self.player_attack)
+                self.attack_resolutions.append(report)
+
+
     # handle attack animation and attack result
     def handle_attack_and_damage_animations(self):
-        
 
         # check dead
-        if self.is_dead:
-            self.image = self.player_jumping
-            print("DEBUG: Player dead animation missing")
-            return
+        if self.is_dead: return
         
 
         # check damage
@@ -228,16 +293,37 @@ class Player(pygame.sprite.Sprite):
 
             # check and run shit explosion animation
             if self.shit_explode_animation:
-                print("DEBUG: Shit explode animation missing")
-                # set is dead
+                
+                # iterate animation index
+                self.explosion_animation_index += 0.2
+
+                if self.explosion_animation_index > len(self.shit_explode):
+                    self.is_dead        = True
+                    self.no_movement    = True
+                    return
+
+                # set image
+                self.image = self.shit_explode[int(self.explosion_animation_index)]
                 return
+
 
             # check and run ass explosion animation
             if self.sperm_explode_animation:
-                print("Debug: Sperm explode")
-                # set is dead
+
+                # iterate animation index
+                self.explosion_animation_index += 0.2
+
+                if self.explosion_animation_index > len(self.sperm_explode):
+                    self.is_dead        = True
+                    self.no_movement    = True
+                    return
+
+                # set image
+                self.image = self.sperm_explode[int(self.explosion_animation_index)]
                 return
             
+
+
             # iterate damage animation index
             self.damage_animation_index += 0.2
 
@@ -267,7 +353,7 @@ class Player(pygame.sprite.Sprite):
                 self.attack_animation_index = 0
                 self.active_slap_attack     = False
                 self.no_movement            = False
-                print("resolve slap attack here")
+                self._resolve_slap_attack()
             
             # update image and return
             self.image = group[int(self.attack_animation_index)]
@@ -319,7 +405,7 @@ class Player(pygame.sprite.Sprite):
 
     # create player report
     def create_player_report(self):
-        return PlayerReport(self.rect.centerx, self.attack_resolutions)
+        return PlayerReport(self.rect.centerx, self.attack_resolutions, self.player_health, self.shit_bonus, self.sperm_bonus, self.is_dead)
 
 
 

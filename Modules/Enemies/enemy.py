@@ -53,6 +53,7 @@ class Enemy(pygame.sprite.Sprite):
 
         self.sprite_killed  = False     # True only for the instance when sprite gets killed
         self.sprite_is_dead = False     # True if sprite is dead
+        self.player_is_dead = False     # True if player is dead
 
 
         # other stats
@@ -62,6 +63,8 @@ class Enemy(pygame.sprite.Sprite):
 
         self.no_move        = False     # halt sprite until timer runs out
         self.no_move_timer  = 0         # timer for no_move
+
+        self.remove_timer   = 5         # remove timer
 
 
         # Graphics and animation
@@ -99,20 +102,27 @@ class Enemy(pygame.sprite.Sprite):
     # handle player inputs, includes death and damage
     def handle_input_data(self, input_data):
 
-        self.player_x_pos = input_data.pos      # get player positon from report
+        self.player_x_pos = input_data.pos              # get player positon from report
+
+        self.player_is_dead = input_data.player_dead        
 
         for damage in input_data.damage_report:
-            print(damage)
+
+            if damage.sprite_id == self.sprite_id:
+                self.sprite_health -= damage.damage
+                self.no_move += 1
+                self.damage_animation = True
+
 
     # handle attack
     def handle_attack(self):
 
         # return if sprite has no move
-        if self.no_move: return
+        if self.no_move or self.sprite_is_dead or self.player_is_dead: return
 
         # excecute attack if player in range
         player_distance = abs(self.player_x_pos - self.rect.centerx)
-        in_reach = player_distance <= 70 and player_distance >= 50     
+        in_reach = player_distance in range(50, 80)
 
         if in_reach:
             self.no_move            = True      # disable movement
@@ -122,6 +132,8 @@ class Enemy(pygame.sprite.Sprite):
 
     # handle walk
     def handle_walk(self):
+
+        if self.sprite_is_dead or self.player_is_dead: return      # return if sprite is dead
 
         # if no_move animation is active
         if self.no_move: 
@@ -169,14 +181,14 @@ class Enemy(pygame.sprite.Sprite):
         # check if player is in reach left
         if is_left and self.orient_left:
             dist = self.rect.centerx - self.player_x_pos
-            if dist > 50 and dist < 80:
+            if dist in range(50, 80):
                 in_range = True
         
 
         # check if player is in reach right
         if not is_left and not self.orient_left:
             dist =  self.player_x_pos - self.rect.centerx
-            if dist > 50 and dist < 80:
+            if dist in range(50, 80):
                 in_range = True
         
                                                                 # if attack was successful:
@@ -186,24 +198,60 @@ class Enemy(pygame.sprite.Sprite):
     # handle animations, include damage report
     def handle_animations(self):
 
-        # abort function if sprite is dead (image set when sprite dies)
-        if self.sprite_is_dead: return
+        if self.sprite_is_dead:             # if sprite is dead
+            self.remove_timer -= 0.1        # start remove timer
+
+            if self.sprite_index == 2:  # special handle for sprite index 2
+
+                # get animation group
+                group = self.sprite_damage_left if self.orient_left else self.sprite_damage_right
+                
+                # increment index
+                self.damage_animation_index += 0.3
+
+                # secure index
+                if self.damage_animation_index > len(group):
+                    self.damage_animation_index = 0
+                
+                self.image = group[int(self.damage_animation_index)]
+                self.rect.x += 12
+
+                
+            return                          # cancel all other animations
 
 
         # damage animation
         if self.damage_animation:
 
+            # set special damage for sprite_2
+            
+            if self.sprite_index == 2:
+                self.sprite_is_dead = True
+                return
+
             # set animation group
             group = self.sprite_damage_left if self.orient_left else self.sprite_damage_right
 
             # increment animation index
-            self.damage_animation_index += 0.4
+            self.damage_animation_index += 0.2
 
             # secure animation index
             if self.damage_animation_index > len(group):
 
                 self.damage_animation_index = 0
                 self.damage_animation       = False
+
+                # set sprite dead if sprite dies
+                if self.sprite_health <= 0: 
+
+                    self.sprite_killed = True           # set sprite killed for stat
+                    self.sprite_is_dead = True          # set sprite is dead for stop any animation
+                    self.image = self.sprite_dead       # set sprite dead image to rect
+                    
+                    # aligh corpse in screen
+                    x_pos = self.rect.centerx
+                    self.rect   = self.image.get_rect(midbottom = (x_pos, self.settings.screen_height - 20))
+                    return
             
             self.image = group[int(self.damage_animation_index)]
             return
@@ -259,12 +307,20 @@ class Enemy(pygame.sprite.Sprite):
 
     # create sprite report
     def create_report(self):
+
+        kill_bonus = 0
+        if self.sprite_killed:
+            if self.sprite_index == 0: kill_bonus = 1
+            if self.sprite_index == 1: kill_bonus = 2
+
         # return sprite object for game loop
-        return EnemyReport(self.sprite_id, self.rect.centerx, self.attack_result, self.sprite_killed)
+        return EnemyReport(self.sprite_id, self.rect.centerx, self.attack_result, self.sprite_killed, kill_bonus)
 
 
     #update sprite
     def update(self, input_data):
+
+        self.destroy()  
 
         self.sprite_killed = False              # reset sprite killed value
         self.attack_result = None               # reset attack result
@@ -275,3 +331,8 @@ class Enemy(pygame.sprite.Sprite):
 
         self.handle_animations()                # handle animation 
         return self.create_report()             # return report
+
+
+    def destroy(self):
+        if self.remove_timer <= 0:
+            self.kill()

@@ -3,10 +3,18 @@
 # player report for sprite
 class PlayerReport:
 
-    def __init__(self, position, damage_reports = []):
+    def __init__(self, position, damage_reports, health, shit, sperm, player_dead):
+
 
         self.pos            = position          # hold player position
         self.damage_report  = damage_reports    # hold damage report for sprites
+
+        self.health         = health            # hold health data for gui
+        self.shit           = shit              # hold shit bonus data
+        self.sperm          = sperm             # hold sperm bonus data
+
+        self.player_dead    = player_dead
+        
 
 
 # damage report for sprite
