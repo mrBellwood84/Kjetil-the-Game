@@ -208,7 +208,7 @@ def draw_help_screen():
         'Press "Q" for CumShot attack if your cock is loaded.', 
         'Press "E" for Assblast attack if your ass is loaded.',
         '',
-        "You will be fighting hunk's and bitches, and sometimes a fancypants.",
+        "You will be fighting hunkes and bitches, and sometimes a fancypants.",
         'Defeating a hunk will load up your ass with diarrhea.',
         "Defeating a bitch will load ip your cock with cum.",
         "Spraying a fancypants with diarrhea or cum will give you health.",
@@ -371,11 +371,13 @@ while True:
         projectiles.update()
 
         # check projectile vs enemy collison
-        res = pygame.sprite.groupcollide(projectiles, enemies, True, False)
+        res = pygame.sprite.groupcollide(projectiles, enemies, False, False)
         if res != {}:
             
             # get sprites hit by load
             sprites = list(res.values())[0]
+            bullet = list(res.keys())[0]
+            print(bullet)
 
             # itterate sprites
             for enemy in sprites:
@@ -385,15 +387,13 @@ while True:
                     player.sprites()[0].player_health += 50
                     if player.sprites()[0].player_health > 200:
                         player.sprites()[0].player_health = 200
+                    enemy.sprite_is_dead = True
+                    bullet.kill()
 
-                # lower health if boss
-                if enemy.sprite_index == 3 or enemy.sprite_index == 4:
-                    enemy.sprite_health -= 50
-                
-                # kill the others
-                else:
-                    enemy.kill()
-                    sprites_killed += 1
+                enemy.sprite_health -= 50
+
+                if not enemy.sprite_is_dead:
+                    bullet.kill()
             
 
         if player_dead:

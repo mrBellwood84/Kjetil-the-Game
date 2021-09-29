@@ -120,6 +120,9 @@ class Enemy(pygame.sprite.Sprite):
                 self.sprite_health -= damage.damage
                 self.no_move += 1
                 self.damage_animation = True
+        
+        if self.sprite_health < 0:
+            self.damage_animation = True
 
 
     # handle attack

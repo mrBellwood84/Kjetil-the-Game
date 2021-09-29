@@ -16,7 +16,7 @@ class Projectile(pygame.sprite.Sprite):
 
         self.settings = GameSettings()
 
-        self.speed      = 30     # projectile speed
+        self.speed      = 20     # projectile speed
         self.to_left    = not direction
 
         # get projectile type graphic
