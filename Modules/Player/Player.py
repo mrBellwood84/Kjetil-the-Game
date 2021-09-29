@@ -1,3 +1,4 @@
+from Modules.Player.PlayerReport import PlayerReport
 from resource_manager import flip_surface_list, get_sprite_surface
 from Modules.settings import GameSettings
 import pygame
@@ -19,16 +20,20 @@ class Player(pygame.sprite.Sprite):
         self.player_health  = 200   # player health
         self.player_attack  = 15    # player attack damage
 
-        self.is_dead = True         # game end when this is true
-
+        self.is_dead = False        # game end when this is true
 
         self.player_speed   = 8     # player speed
         self.player_gravity = 0     # gravity for jump
 
 
+        self.attack_resolutions = []    # hold attack resolutions for player
+        self.enemies_report     = []    # hold enemies report
+
+
         # Graphics and animation collection
         self.player_standing            = get_sprite_surface("jantheman", "stand")
         self.player_jumping             = get_sprite_surface("jantheman", "jump")
+
         self.player_damaged             = [get_sprite_surface('jantheman', 'damage'), get_sprite_surface('jantheman', 'damage') ]
 
         self.player_walk_right          = get_sprite_surface("jantheman", "walk", 2)
@@ -43,12 +48,13 @@ class Player(pygame.sprite.Sprite):
         self.player_ass_attack_right    = get_sprite_surface("jantheman", 'ass', 2)
         self.player_ass_attack_left     = flip_surface_list(self.player_ass_attack_right)
 
+        self.sperm_explode  = []
+        self.shit_explode = []
+
 
         # Initial player image and rectanggle
-        self.image  = self.player_stand
+        self.image  = self.player_standing
         self.rect   = self.image.get_rect(bottom = self.settings.floor)
-
-        # variables for enemy interaction
 
 
         # other variables
@@ -83,6 +89,20 @@ class Player(pygame.sprite.Sprite):
         self.explotion_animation_index  = 0         # index for explosion animation
 
 
+    # handle input data
+    def handle_input_data(self, input_data):
+
+        self.enemies_report = input_data        # store input data
+
+        # handle player damage
+        for report in input_data:
+            if report.damage != None:
+                self.player_health      -= report.damage    # subtract damage from health
+                self.damage_animation   = True              # set damage animation as true
+                self.no_movement        = True              # set no movement as true
+                print("health:", self.player_health)
+
+
     # handle player walk
     def handle_walk(self):
 
@@ -112,11 +132,10 @@ class Player(pygame.sprite.Sprite):
     # handle player jump
     def handle_jump(self):
 
-        if self.no_movement: return
-
         # handle jump input
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE] and self.rect.bottom == self.settings.floor:
+            print("jump")
             self.player_gravity = -20
             self.jump_animation = True
 
@@ -145,18 +164,21 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_s]:
             self.no_movement        = True
             self.active_slap_attack = True
+            print("face closest enemy function here")
             return
 
         # check ass attack
         if keys[pygame.K_e]:
             self.no_movement        = True
             self.active_ass_attack  = True
+            print("face closest enemy function here")
             return
         
         # check cock attack
         if keys[pygame.K_q]:
             self.no_movement        = True
             self.active_cock_attack = True
+            print("face closest enemy function here")
             return
 
 
@@ -168,7 +190,7 @@ class Player(pygame.sprite.Sprite):
 
         # handle jump only if active
         if self.jump_animation:
-            self.image = self.player_jump
+            self.image = self.player_jumping
             return
         
         # handle walk animation
@@ -177,53 +199,60 @@ class Player(pygame.sprite.Sprite):
             group = self.player_walk_left if self.orient_left else self.player_walk_right
 
             # increment animation index
-            self.player_walk_index += 0.2
+            self.walk_animation_index += 0.2
 
             # secure index 
-            if self.player_walk_index > len(group):
-                self.player_walk_index = 0
+            if self.walk_animation_index > len(group):
+                self.walk_animation_index = 0
             
             # adjust image and return
-            self.image = group[int(self.player_walk_index)]
+            self.image = group[int(self.walk_animation_index)]
             return
         
         # set standing if no above is valid
-        self.image = self.player_stand
+        self.image = self.player_standing
 
-
-
-
-
-        if self.damage_animation:
-            self.damage_animation_timer -= 0.1
-            if self.damage_animation_timer <= 0:
-                self.damage_animation = False
-            self.image = self.player_damage
-
-
-        if damage == 0: return
-        
-        self.player_health -= damage
-        self.damage_animation = True
-        self.damage_animation_timer = 1
-        print(self.player_health)
-
-
-    # handle attack animation and result
+    # handle attack animation and attack result
     def handle_attack_and_damage_animations(self):
         
-        #DEV :: continue here
 
         # check dead
+        if self.is_dead:
+            self.image = self.player_jumping
+            print("DEBUG: Player dead animation missing")
+            return
+        
+
         # check damage
-        # check and resolve attacks
-            # face closes enemy for any attack
-            # all enemies in range get damaged
+        if self.damage_animation:
 
-        # return if no active attack
-        if not self.attack_animation: return
+            # check and run shit explosion animation
+            if self.shit_explode_animation:
+                print("DEBUG: Shit explode animation missing")
+                # set is dead
+                return
 
-        # handle slap attack
+            # check and run ass explosion animation
+            if self.sperm_explode_animation:
+                print("Debug: Sperm explode")
+                # set is dead
+                return
+            
+            # iterate damage animation index
+            self.damage_animation_index += 0.2
+
+            # secure animation index
+            if self.damage_animation_index > len(self.player_damaged):
+                self.damage_animation_index = 0
+                self.damage_animation = False
+                self.no_movement = False
+            
+            # set image
+            self.image = self.player_damaged[int(self.damage_animation_index)]
+            return
+
+
+        # check slap attack
         if self.active_slap_attack:
 
             # get attack direction group
@@ -234,15 +263,18 @@ class Player(pygame.sprite.Sprite):
 
             # deactive attack if attack complete
             if self.attack_animation_index > len(group):
+
                 self.attack_animation_index = 0
-                self.active_slap_attack = False
-                return
+                self.active_slap_attack     = False
+                self.no_movement            = False
+                print("resolve slap attack here")
             
             # update image and return
             self.image = group[int(self.attack_animation_index)]
             return
 
-        # handle ass attack
+
+        # check ass attack
         if self.active_ass_attack:
 
             # get attack direction group
@@ -253,15 +285,18 @@ class Player(pygame.sprite.Sprite):
 
             # deactive attack if attack complete
             if self.attack_animation_index > len(group):
+
                 self.attack_animation_index = 0
-                self.active_ass_attack = False
-                return
+                self.active_ass_attack      = False
+                self.no_movement            = False
+                print("shoot shit here")
             
             # update image and return
             self.image = group[int(self.attack_animation_index)]
             return
 
-        # handle cock attack
+
+        # check cock attack
         if self.active_cock_attack:
 
             # get attack direction group
@@ -272,41 +307,36 @@ class Player(pygame.sprite.Sprite):
 
             # deactive attack if attack complete
             if self.attack_animation_index > len(group):
+
                 self.attack_animation_index = 0
-                self.active_cock_attack = False
-                return
+                self.active_cock_attack     = False
+                self.no_movement            = False
+                print("shoot sperm here")
             
             # update image and return
             self.image = group[int(self.attack_animation_index)]
             return
-        
-        # deactivate attack animations if none active
-        self.a = False
+
+    # create player report
+    def create_player_report(self):
+        return PlayerReport(self.rect.centerx, self.attack_resolutions)
 
 
-    # handle player damage
-    def handle_player_damage(self, damage):
+
 
     # update sprite
-    def update(self, damage):
+    def update(self, input_data):
 
-        # clear attack resoluton
-        # handle game inputs
-        # handle user inputs
-        # handle animations
-        # return object with:
-            # position
-            # attack resolutions
+        self.attack_resolutions = []                # clear attack resolutons
 
+        self.handle_input_data(input_data)          # handle input data
 
-        # handle inputs
-        self.handle_walk()
-        self.handle_jump()
-        self.handle_attack()
+        self.handle_attack()                        # handle attack inputs
+        self.handle_jump()                          # handle jump input
+        self.handle_walk()                          # handle move inputs
 
-        # self.handle_player_damage(damage)
-        self.handle_move_animations()
+        self.handle_attack_and_damage_animations()  # handle attack animations
+        self.handle_move_animations()               # handle move animations
 
-        # handle animations
-        self.handle_move_animations()
-        self.handle_attack_animation()
+        return self.create_player_report()
+
