@@ -1,3 +1,4 @@
+from Modules.Projectiles.Projectile import Projectile
 from typing import _SpecialForm
 from pygame import key
 
@@ -36,7 +37,7 @@ kjetil_image = pygame.image.load(kjetil_image_path)
 clock   = pygame.time.Clock()   # Game clock for controlling framerate
 FPS     = 60                    # Value for game framerate
 
-player_report       = PlayerReport(0, [], 0, 0, 0, False)   # player report for sprites
+player_report       = PlayerReport(0, [], 0, 0, 0, False, None, False)   # player report for sprites
 
 
 sprites_on_screen   = 0     # sprites on screen for spawn
@@ -46,6 +47,9 @@ boss_spawn_countdown = randint(10,15)   # countdown for boss spawn
 player_health   = 200   # player health for health bar
 shit            = 0     # player shit bonus for shit shoot
 sperm           = 0     # player sperm for sperm shot
+
+player_dead     = False     # True when player dies 
+player_dead_timer = 6       # Timer for player death
 
 
 game_active = False
@@ -105,7 +109,7 @@ def draw_shit_bar():
     shit = pygame.Surface((progress, 20))
     shit.fill("brown")
 
-    shit_txt = f'{availible} / 3 Shit Shots'
+    shit_txt = f'{availible} / 1 Brown Torpedo'
     shit_text = game_font.render(shit_txt, True, "white")
 
     screen.blit(shitbar_surface, pos)
@@ -132,7 +136,7 @@ def draw_sperm_bar():
     sperm = pygame.Surface((progress, 20))
     sperm.fill("white")
 
-    sperm_txt = f'{availible} / 3 Cum Shots'
+    sperm_txt = f'{availible} / 1 Cumshot'
     sperm_text = game_font.render(sperm_txt, True, "white")
 
     screen.blit(spermbar_surface, pos)
@@ -198,15 +202,22 @@ def draw_break_screen():
 def draw_help_screen():
     
     text = [
-        'Press "A" and "D" to move left and right',
-        'Press "SPACEBAR" to jump',
-        'Press "S" for a classic bitchslap to the face',
-        'Press "Q" for CumShot attack if you\'re loaded', 
-        'Press "E" for AssAttack if you\'re loaded',
+        'Press "A" and "D" to move left and right.',
+        'Press "SPACEBAR" to jump.',
+        'Press "S" for a classic bitchslap to the face.',
+        'Press "Q" for CumShot attack if your cock is loaded.', 
+        'Press "E" for Assblast attack if your ass is loaded.',
         '',
-        'You will fight bitches and assholes until you die, just like in real life',
+        "You will be fighting hunk's and bitches, and sometimes a fancypants.",
+        'Defeating a hunk will load up your ass with diarrhea.',
+        "Defeating a bitch will load ip your cock with cum.",
+        "Spraying a fancypants with diarrhea or cum will give you health.",
+        "",
         'Be aware of your cumload and your shitload.', 
-        'If you get overloaded, you will explode!',
+        'If load more than 1, you will explode!!!',
+        "",
+        "Oh, by the way:",
+        "Chuck Norris or Arnold Schwarznegger might show up to kick your ass...",
         "",
         "Be like Kjetil, Be awesome!!!"
     ]
@@ -219,12 +230,12 @@ def draw_help_screen():
         line = game_font_2.render(t, False, "brown")
         lines.append(line)
     
-    y = 50
+    y = 30
 
     for line in lines:
-        rect = line.get_rect(center = (600, y))
+        rect = line.get_rect(midleft = (20, y))
         rects.append(rect)
-        y += 50
+        y += 30
     
     l = len(text)
 
@@ -238,19 +249,23 @@ def draw_help_screen():
 
 # add player sprite
 player = pygame.sprite.GroupSingle()
-player.add(Player())
 
 # add enemy sprite group
 enemies = pygame.sprite.Group()
-foe = Enemy(1)
-enemies.add(foe)
+
+projectiles = pygame.sprite.Group()
 
 
 # start new game
 def start_game():
-    global player, enemies, sprites_killed
+    global player, enemies, sprites_killed, player_dead, player_dead_timer
+
+    player_dead = False
+    player_dead_timer = 6
+
     player.add(Player())
     enemies.empty()
+    sprites_killed = 0
 
 # add spawn event
 spawn_timer = pygame.USEREVENT + 1
@@ -297,14 +312,6 @@ while True:
                     e = choice([3,4])
                     enemies.add(Enemy(e))
                     boss_spawn_countdown = randint(11,16)
-
-
-
-
-
-            
-
-       
                    
 
     if game_active:
@@ -349,6 +356,51 @@ while True:
         player_health   = player_report.health      # get player health
         shit            = player_report.shit        # get player shit
         sperm           = player_report.sperm       # get player sperm
+
+        player_dead = player_report.player_dead     # report dead player
+
+        # add projectile if shot
+        if player_report.shoot != None:
+            print("shoot")
+            print(player_report.direction)
+            p = Projectile(player_report.shoot, player_report.pos, player_report.direction)
+            projectiles.add(p)
+
+        # draw and update projectiles
+        projectiles.draw(screen)
+        projectiles.update()
+
+        # check projectile vs enemy collison
+        res = pygame.sprite.groupcollide(projectiles, enemies, True, False)
+        if res != {}:
+            
+            # get sprites hit by load
+            sprites = list(res.values())[0]
+
+            # itterate sprites
+            for enemy in sprites:
+
+                # add health if fancypants
+                if enemy.sprite_index == 2:
+                    player.sprites()[0].player_health += 50
+                    if player.sprites()[0].player_health > 200:
+                        player.sprites()[0].player_health = 200
+
+                # lower health if boss
+                if enemy.sprite_index == 3 or enemy.sprite_index == 4:
+                    enemy.sprite_health -= 50
+                
+                # kill the others
+                else:
+                    enemy.kill()
+                    sprites_killed += 1
+            
+
+        if player_dead:
+            player_dead_timer -= 0.1
+
+        if player_dead_timer < 0:
+            game_active = False
 
     else:
         if show_help:

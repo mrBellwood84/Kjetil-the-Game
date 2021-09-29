@@ -11,4 +11,4 @@ But be warned! If Kjetil gets filled up with cum and diarrhea, he will explode a
 
 ### Note:
 
-This is my first game ever.
+This is my first game ever, and probably my last using pygame.

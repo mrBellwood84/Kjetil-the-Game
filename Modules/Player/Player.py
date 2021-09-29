@@ -1,4 +1,3 @@
-from Modules.Enemies.EnemyReport import EnemyReport
 from Modules.Player.PlayerReport import DamageReport, PlayerReport
 from resource_manager import flip_surface_list, get_sprite_surface
 from Modules.settings import GameSettings
@@ -32,6 +31,7 @@ class Player(pygame.sprite.Sprite):
 
         self.attack_resolutions = []        # hold attack resolutions for player
         self.enemies_report     = []        # hold enemies report
+        self.shooting           = None      # 0 = cum, 1 = shit,
 
 
         # Graphics and animation collection
@@ -103,18 +103,18 @@ class Player(pygame.sprite.Sprite):
 
 
             if report.kill_bonus == 1:
-                self.shit_bonus += 0.3
+                self.shit_bonus += 0.26
             if report.kill_bonus == 2:
-                self.sperm_bonus += 0.3
+                self.sperm_bonus += 0.26
             
-            if self.shit_bonus >= 4:
+            if self.shit_bonus >= 2:
                 self.player_health = 0
                 self.damage_animation = True
                 self.shit_explode_animation = True
                 self.no_movement = True
                 return
             
-            if self.sperm_bonus >= 4:
+            if self.sperm_bonus >= 2:
                 self.player_health = 0
                 self.damage_animation = True
                 self.sperm_explode_animation = True
@@ -159,6 +159,8 @@ class Player(pygame.sprite.Sprite):
 
     # handle player jump
     def handle_jump(self):
+
+        if self.is_dead: return
 
         # handle jump input
         keys = pygame.key.get_pressed()
@@ -214,14 +216,20 @@ class Player(pygame.sprite.Sprite):
 
         # check ass attack
         if keys[pygame.K_e]:
-            self.no_movement        = True
-            self.active_ass_attack  = True
+            if self.shit_bonus < 1 or self.jump_animation: return      # disable ass if shit not loaded or player jumping
+
+            self.shit_bonus -= 1                # subtract shit from colon
+            self.no_movement        = True      # block other stuff
+            self.active_ass_attack  = True      # activate ass blast animation
             return
         
         # check cock attack
         if keys[pygame.K_q]:
-            self.no_movement        = True
-            self.active_cock_attack = True
+            if self.sperm_bonus < 1 or self.jump_animation: return     # disable attack if cock not loaded or player jumping
+
+            self.sperm_bonus -= 1               # subtract power from cock
+            self.no_movement        = True      # block other stuff
+            self.active_cock_attack = True      # activate cock attack animation
             return
 
 
@@ -374,7 +382,7 @@ class Player(pygame.sprite.Sprite):
                 self.attack_animation_index = 0
                 self.active_ass_attack      = False
                 self.no_movement            = False
-                print("shoot shit here")
+                self.shooting               = 1
             
             # update image and return
             self.image = group[int(self.attack_animation_index)]
@@ -396,7 +404,7 @@ class Player(pygame.sprite.Sprite):
                 self.attack_animation_index = 0
                 self.active_cock_attack     = False
                 self.no_movement            = False
-                print("shoot sperm here")
+                self.shooting               = 0
             
             # update image and return
             self.image = group[int(self.attack_animation_index)]
@@ -404,7 +412,7 @@ class Player(pygame.sprite.Sprite):
 
     # create player report
     def create_player_report(self):
-        return PlayerReport(self.rect.centerx, self.attack_resolutions, self.player_health, self.shit_bonus, self.sperm_bonus, self.is_dead)
+        return PlayerReport(self.rect.centerx, self.attack_resolutions, self.player_health, self.shit_bonus, self.sperm_bonus, self.is_dead, self.shooting, self.orient_left)
 
 
 
@@ -413,6 +421,7 @@ class Player(pygame.sprite.Sprite):
     def update(self, input_data):
 
         self.attack_resolutions = []                # clear attack resolutons
+        self.shooting           = None              # clear shooting value
 
         self.handle_input_data(input_data)          # handle input data
 

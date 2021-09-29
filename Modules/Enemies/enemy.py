@@ -23,19 +23,19 @@ sprites_health = [
 
 # sprite attack power list
 sprites_attack = [
-    5,      # hunk
-    3,      # bitch
-    1,      # fancypants
-    10,     # arnold
-    10,     # chuck
+    10,      # hunk
+    8,      # bitch
+    5,      # fancypants
+    20,     # arnold
+    20,     # chuck
 ]
 
 sprite_speeds = [
-    4,      # hunk
-    6,      # bitch
-    6,      # fancypants
-    5,      # arnold
-    5,      # chick
+    6,      # hunk
+    8,      # bitch
+    5,      # fancypants
+    8,      # arnold
+    8,      # chick
 ]
 
 
@@ -91,7 +91,7 @@ class Enemy(pygame.sprite.Sprite):
 
         # initial image and rect
         self.image  = self.sprite_stand
-        self.rect   = self.image.get_rect(midbottom = (self.settings.screen_width + 200 , self.settings.floor - 10))
+        self.rect   = self.image.get_rect(midbottom = (self.settings.screen_width + 50 , self.settings.floor - 10))
 
 
         # animation values
