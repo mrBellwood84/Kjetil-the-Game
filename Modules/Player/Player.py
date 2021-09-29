@@ -276,7 +276,6 @@ class Player(pygame.sprite.Sprite):
 
             if in_range:
 
-                print("attack success")
                 report = DamageReport(enemy.id, self.player_attack)
                 self.attack_resolutions.append(report)
 

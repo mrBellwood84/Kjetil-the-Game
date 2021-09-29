@@ -17,8 +17,8 @@ sprites_health = [
     30,     # hunk
     30,     # bitch
     1000,   # fancypants
-    300,    # arnold
-    500     # chuck
+    150,    # arnold
+    150     # chuck
 ]
 
 # sprite attack power list
@@ -27,7 +27,15 @@ sprites_attack = [
     3,      # bitch
     1,      # fancypants
     10,     # arnold
-    20,     # chuck
+    10,     # chuck
+]
+
+sprite_speeds = [
+    4,      # hunk
+    6,      # bitch
+    6,      # fancypants
+    5,      # arnold
+    5,      # chick
 ]
 
 
@@ -49,7 +57,7 @@ class Enemy(pygame.sprite.Sprite):
         self.sprite_health  = sprites_health[sprite_index]  # sprite health
         self.sprite_attack  = sprites_attack[sprite_index]  # sprite attack power
 
-        self.sprite_speed   = 4         # sprite movement speed
+        self.sprite_speed   = sprite_speeds[sprite_index]   # sprite movement speed
 
         self.sprite_killed  = False     # True only for the instance when sprite gets killed
         self.sprite_is_dead = False     # True if sprite is dead
@@ -83,7 +91,7 @@ class Enemy(pygame.sprite.Sprite):
 
         # initial image and rect
         self.image  = self.sprite_stand
-        self.rect   = self.image.get_rect(midbottom = (self.settings.screen_width - 200 , self.settings.floor - 10))
+        self.rect   = self.image.get_rect(midbottom = (self.settings.screen_width + 200 , self.settings.floor - 10))
 
 
         # animation values

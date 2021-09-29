@@ -1,4 +1,7 @@
 from typing import _SpecialForm
+from pygame import key
+
+from pygame.constants import K_h
 from Modules.Player.PlayerReport import PlayerReport
 from Modules.Enemies.enemy import Enemy
 import os
@@ -6,6 +9,7 @@ from Modules.settings import GameSettings
 from Modules.Player.Player import Player
 from sys import exit
 import pygame
+from random import choice, randint
 
 
 pygame.init()               # initialize pygame
@@ -17,8 +21,16 @@ settings = GameSettings()   # import common game settings
 screen = pygame.display.set_mode((settings.screen_width, settings.screen_height))
 pygame.display.set_caption("Kjetil the Game")
 
-game_font = pygame.font.SysFont(None, 24)
-game_font_2 = pygame.font.SysFont(None, 48)
+font_path = os.path.join("Resources", "Fonts", "Pixeltype.ttf")
+game_font = pygame.font.Font(font_path, 24)
+game_font_2 = pygame.font.Font(font_path, 48)
+game_font_3 = pygame.font.Font(font_path, 72)
+
+
+# get kjetil image
+kjetil_image_path = os.path.join("resources","images","kjetil.png")
+kjetil_image = pygame.image.load(kjetil_image_path)
+
 
 
 clock   = pygame.time.Clock()   # Game clock for controlling framerate
@@ -29,10 +41,17 @@ player_report       = PlayerReport(0, [], 0, 0, 0, False)   # player report for 
 
 sprites_on_screen   = 0     # sprites on screen for spawn
 sprites_killed      = 0     # sprites killed for score
+boss_spawn_countdown = randint(10,15)   # countdown for boss spawn
 
 player_health   = 200   # player health for health bar
 shit            = 0     # player shit bonus for shit shoot
 sperm           = 0     # player sperm for sperm shot
+
+
+game_active = False
+fresh_start = True
+show_help   = False
+
 
 
 
@@ -59,7 +78,7 @@ def draw_health_bar():
     health = pygame.Surface((int(player_health), size[1]))
     health.fill("green")
 
-    health_text = game_font.render("HELSE", True, "white")
+    health_text = game_font.render("Health", True, "white")
 
     screen.blit(healthbar_surface, pos)
     screen.blit(health, pos)
@@ -86,7 +105,7 @@ def draw_shit_bar():
     shit = pygame.Surface((progress, 20))
     shit.fill("brown")
 
-    shit_txt = f'{availible} / 3 SPRUTBÆSJ'
+    shit_txt = f'{availible} / 3 Shit Shots'
     shit_text = game_font.render(shit_txt, True, "white")
 
     screen.blit(shitbar_surface, pos)
@@ -113,23 +132,106 @@ def draw_sperm_bar():
     sperm = pygame.Surface((progress, 20))
     sperm.fill("white")
 
-    sperm_txt = f'{availible} / 3 SPØNKSHOTS'
+    sperm_txt = f'{availible} / 3 Cum Shots'
     sperm_text = game_font.render(sperm_txt, True, "white")
 
     screen.blit(spermbar_surface, pos)
     screen.blit(sperm, pos)
     screen.blit(sperm_text, (220, 74))
 
-
 # draw kill score
 def draw_kill_score():
 
-    kill_text = f'{sprites_killed} FIENDER SLAKTA NED'
+    kill_text = f"{sprites_killed} bro's and hoe's smacked down"
     box = game_font_2.render(kill_text, True, "pink")
     
     screen.blit(box, (500, 40))
 
 
+# draw break screen
+def draw_break_screen():
+
+    title_text = game_font_3.render("Kjetil, The Game", False, "brown")
+    title_rect = title_text.get_rect(center=(600, 60))
+
+    kjetil_rect = kjetil_image.get_rect(center=(600, 220))
+
+    text = [
+        "Welcome",
+        "",
+        "GAME OVER",
+        f"You killed {sprites_killed} bitches and assholes",
+        "Press Spacebar to start a new game",
+        'Press "H" to see instructions'
+    ]
+
+    line_1 = game_font_2.render(text[0], False, "brown")
+    line_2 = game_font_2.render(text[1], False, "brown")
+    line_3 = game_font_2.render(text[2], False, "brown")
+    line_4 = game_font_2.render(text[3], False, "brown")
+    line_5 = game_font_2.render(text[4], False, "brown")
+    line_6 = game_font_2.render(text[5], False, "brown")
+
+    line_1_rect = line_1.get_rect(center=(600,400))
+    line_2_rect = line_2.get_rect(center=(600,450))
+    line_3_rect = line_3.get_rect(center=(600,400))
+    line_4_rect = line_4.get_rect(center=(600,450))
+    line_5_rect = line_5.get_rect(center=(600,500))
+    line_6_rect = line_6.get_rect(center=(600,550))
+
+
+    screen.fill((254,255,255))
+    screen.blit(title_text, title_rect)
+    screen.blit(kjetil_image, kjetil_rect)
+
+    if fresh_start:
+        screen.blit(line_1, line_1_rect)
+        screen.blit(line_2, line_2_rect)
+    else:
+        screen.blit(line_3, line_3_rect)
+        screen.blit(line_4, line_4_rect )
+    
+    screen.blit(line_5, line_5_rect)
+    screen.blit(line_6, line_6_rect)
+    
+# draw help screen    
+def draw_help_screen():
+    
+    text = [
+        'Press "A" and "D" to move left and right',
+        'Press "SPACEBAR" to jump',
+        'Press "S" for a classic bitchslap to the face',
+        'Press "Q" for CumShot attack if you\'re loaded', 
+        'Press "E" for AssAttack if you\'re loaded',
+        '',
+        'You will fight bitches and assholes until you die, just like in real life',
+        'Be aware of your cumload and your shitload.', 
+        'If you get overloaded, you will explode!',
+        "",
+        "Be like Kjetil, Be awesome!!!"
+    ]
+
+    lines = []
+
+    rects = []
+
+    for t in text:
+        line = game_font_2.render(t, False, "brown")
+        lines.append(line)
+    
+    y = 50
+
+    for line in lines:
+        rect = line.get_rect(center = (600, y))
+        rects.append(rect)
+        y += 50
+    
+    l = len(text)
+
+    screen.fill((254,255,255))
+
+    for i in range(l):
+        screen.blit(lines[i], rects[i])
 
 
 ####    SPRITES    ###
@@ -143,6 +245,17 @@ enemies = pygame.sprite.Group()
 foe = Enemy(1)
 enemies.add(foe)
 
+
+# start new game
+def start_game():
+    global player, enemies, sprites_killed
+    player.add(Player())
+    enemies.empty()
+
+# add spawn event
+spawn_timer = pygame.USEREVENT + 1
+pygame.time.set_timer(spawn_timer, 2000)
+
 # main game loop
 while True:
 
@@ -153,47 +266,95 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+
+        if not game_active:
+
+            if show_help and event.type == pygame.KEYDOWN:
+                show_help = False
+            
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
+                show_help = True
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                fresh_start = False
+                game_active = True
+                start_game()
         
-    
-    # draw background:
-    draw_game_background()
-    draw_health_bar()
-    draw_shit_bar()
-    draw_sperm_bar()
-    draw_kill_score()
+        if game_active:
 
+            
+            if event.type == spawn_timer:
 
+                if sprites_on_screen == 0:
+                    e = choice([0,1])
+                    enemies.add(Enemy(e))
 
-    ### HANDLE ENEMY SPRITES ###
+                if (boss_spawn_countdown > 0 and sprites_on_screen < 3):
+                    e = choice([0,1,0,1,0,1,2])
+                    enemies.add(Enemy(e))
 
-    enemies_report = []             # hold enemy reports
-    enemies.draw(screen)            # draw enemy sprites on screen
-    sprites = enemies.sprites()     # get sprites array
-
-    sprites_on_screen = len(sprites)    # update sprite on screen value
-
-    for sprite in sprites:               # update and collect report for each sprite
-
-        report = sprite.update(player_report)   # update sprite with player report
-
-        if report.killed: sprites_killed += 1   # update sprites killed
-
-        enemies_report.append(report)           # gather enemy report
+                if (boss_spawn_countdown == 0):
+                    e = choice([3,4])
+                    enemies.add(Enemy(e))
+                    boss_spawn_countdown = randint(11,16)
 
 
 
 
 
-    ### HANDLE PLAYER SPRITE ###
+            
 
-    player.draw(screen)         # draw player sprite
+       
+                   
 
-    player_report = player.sprites()[0].update(enemies_report)    # update player with enemies report
-    
-    player_health   = player_report.health      # get player health
-    shit            = player_report.shit        # get player shit
-    sperm           = player_report.sperm       # get player sperm
+    if game_active:
+        
+        # draw background and gui elements
+        draw_game_background()
+        draw_health_bar()
+        draw_shit_bar()
+        draw_sperm_bar()
+        draw_kill_score()
 
+
+
+        ### HANDLE ENEMY SPRITES ###
+
+        enemies_report = []             # hold enemy reports
+        enemies.draw(screen)            # draw enemy sprites on screen
+        sprites = enemies.sprites()     # get sprites array
+
+        sprites_on_screen = len(sprites)    # update sprite on screen value
+
+        for sprite in sprites:               # update and collect report for each sprite
+
+            report = sprite.update(player_report)   # update sprite with player report
+
+            if report.killed: 
+                sprites_killed += 1   # update sprites killed
+                boss_spawn_countdown -= 1
+
+            enemies_report.append(report)           # gather enemy report
+
+
+
+
+
+        ### HANDLE PLAYER SPRITE ###
+
+        player.draw(screen)         # draw player sprite
+
+        player_report = player.sprites()[0].update(enemies_report)    # update player with enemies report
+        
+        player_health   = player_report.health      # get player health
+        shit            = player_report.shit        # get player shit
+        sperm           = player_report.sperm       # get player sperm
+
+    else:
+        if show_help:
+            draw_help_screen()
+        else:
+            draw_break_screen()
 
 
 
