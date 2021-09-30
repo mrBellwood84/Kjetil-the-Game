@@ -1,7 +1,9 @@
 from Modules.Player.PlayerReport import DamageReport, PlayerReport
-from resource_manager import flip_surface_list, get_sprite_surface
+from resource_manager import flip_surface_list, get_sprite_surface, play_random_hit_sound, play_sound_effect
 from Modules.settings import GameSettings
 import pygame
+from random import choice
+
 
 '''
 Player sprite
@@ -32,6 +34,8 @@ class Player(pygame.sprite.Sprite):
         self.attack_resolutions = []        # hold attack resolutions for player
         self.enemies_report     = []        # hold enemies report
         self.shooting           = None      # 0 = cum, 1 = shit,
+        
+        self.death_sound_effect = False     # Turn true when play sound effect
 
 
         # Graphics and animation collection
@@ -112,6 +116,9 @@ class Player(pygame.sprite.Sprite):
                 self.damage_animation = True
                 self.shit_explode_animation = True
                 self.no_movement = True
+                if not self.death_sound_effect:
+                    play_sound_effect("ass_explode")
+                    self.death_sound_effect = True
                 return
             
             if self.sperm_bonus >= 2:
@@ -119,6 +126,9 @@ class Player(pygame.sprite.Sprite):
                 self.damage_animation = True
                 self.sperm_explode_animation = True
                 self.no_movement = True
+                if not self.death_sound_effect:
+                    play_sound_effect("cock_explode")
+                    self.death_sound_effect = True
                 return
 
 
@@ -129,6 +139,9 @@ class Player(pygame.sprite.Sprite):
             
             if self.player_health <= 0:
                 self.shit_explode_animation = True
+                if not self.death_sound_effect:
+                    play_sound_effect("player_death")
+                    self.death_sound_effect = True
 
 
     # handle player walk
@@ -221,6 +234,7 @@ class Player(pygame.sprite.Sprite):
             self.shit_bonus -= 1                # subtract shit from colon
             self.no_movement        = True      # block other stuff
             self.active_ass_attack  = True      # activate ass blast animation
+            play_sound_effect("ass")           # play sound effect
             return
         
         # check cock attack
@@ -230,6 +244,7 @@ class Player(pygame.sprite.Sprite):
             self.sperm_bonus -= 1               # subtract power from cock
             self.no_movement        = True      # block other stuff
             self.active_cock_attack = True      # activate cock attack animation
+            play_sound_effect("cock")
             return
 
 
@@ -283,7 +298,7 @@ class Player(pygame.sprite.Sprite):
                     in_range = True
 
             if in_range:
-
+                play_random_hit_sound()
                 report = DamageReport(enemy.id, self.player_attack)
                 self.attack_resolutions.append(report)
 
@@ -413,8 +428,6 @@ class Player(pygame.sprite.Sprite):
     # create player report
     def create_player_report(self):
         return PlayerReport(self.rect.centerx, self.attack_resolutions, self.player_health, self.shit_bonus, self.sperm_bonus, self.is_dead, self.shooting, self.orient_left)
-
-
 
 
     # update sprite

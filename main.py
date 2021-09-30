@@ -1,3 +1,4 @@
+from resource_manager import play_sound_effect
 from Modules.Projectiles.Projectile import Projectile
 from typing import _SpecialForm
 from pygame import key
@@ -22,15 +23,28 @@ settings = GameSettings()   # import common game settings
 screen = pygame.display.set_mode((settings.screen_width, settings.screen_height))
 pygame.display.set_caption("Kjetil the Game")
 
+# manage game fonts
 font_path = os.path.join("Resources", "Fonts", "Pixeltype.ttf")
 game_font = pygame.font.Font(font_path, 24)
 game_font_2 = pygame.font.Font(font_path, 48)
 game_font_3 = pygame.font.Font(font_path, 72)
 
 
+# background music players
+menu_music_path = os.path.join("resources","music","menu_music.ogg")
+menu_music = pygame.mixer.Sound(menu_music_path)
+menu_music.set_volume(0.6)
+menu_music.play(loops=-1)
+
+battle_music_path = os.path.join("resources","music","game_music.ogg")
+battle_music = pygame.mixer.Sound(battle_music_path)
+battle_music.set_volume(0.6)
+
 # get kjetil image
 kjetil_image_path = os.path.join("resources","images","kjetil.png")
 kjetil_image = pygame.image.load(kjetil_image_path)
+
+
 
 
 
@@ -50,6 +64,7 @@ sperm           = 0     # player sperm for sperm shot
 
 player_dead     = False     # True when player dies 
 player_dead_timer = 6       # Timer for player death
+music_fadeout   = False      # trigger music fadeout
 
 
 game_active = False
@@ -164,7 +179,7 @@ def draw_break_screen():
         "Welcome",
         "",
         "GAME OVER",
-        f"You killed {sprites_killed} bitches and assholes",
+        f"You gave {sprites_killed} bitches and assholes a lesson",
         "Press Spacebar to start a new game",
         'Press "H" to see instructions'
     ]
@@ -245,15 +260,12 @@ def draw_help_screen():
         screen.blit(lines[i], rects[i])
 
 
+
 ####    SPRITES    ###
 
-# add player sprite
-player = pygame.sprite.GroupSingle()
-
-# add enemy sprite group
-enemies = pygame.sprite.Group()
-
-projectiles = pygame.sprite.Group()
+player = pygame.sprite.GroupSingle()    # player sprite group
+enemies = pygame.sprite.Group()         # enemies sprite group
+projectiles = pygame.sprite.Group()     # projectiles sprite group
 
 
 # start new game
@@ -266,6 +278,9 @@ def start_game():
     player.add(Player())
     enemies.empty()
     sprites_killed = 0
+    menu_music.stop()
+    play_sound_effect("start")
+    battle_music.play(loops = -1)
 
 # add spawn event
 spawn_timer = pygame.USEREVENT + 1
@@ -300,15 +315,15 @@ while True:
             
             if event.type == spawn_timer:
 
-                if sprites_on_screen == 0:
+                if sprites_on_screen <= 0:
                     e = choice([0,1])
                     enemies.add(Enemy(e))
 
-                if (boss_spawn_countdown > 0 and sprites_on_screen < 3):
+                if (sprites_on_screen < 3):
                     e = choice([0,1,0,1,0,1,2])
                     enemies.add(Enemy(e))
 
-                if (boss_spawn_countdown == 0):
+                if (boss_spawn_countdown <= 0):
                     e = choice([3,4])
                     enemies.add(Enemy(e))
                     boss_spawn_countdown = randint(11,16)
@@ -339,6 +354,7 @@ while True:
 
             if report.killed: 
                 sprites_killed += 1   # update sprites killed
+                sprites_on_screen -= 1
                 boss_spawn_countdown -= 1
 
             enemies_report.append(report)           # gather enemy report
@@ -361,8 +377,6 @@ while True:
 
         # add projectile if shot
         if player_report.shoot != None:
-            print("shoot")
-            print(player_report.direction)
             p = Projectile(player_report.shoot, player_report.pos, player_report.direction)
             projectiles.add(p)
 
@@ -377,7 +391,6 @@ while True:
             # get sprites hit by load
             sprites = list(res.values())[0]
             bullet = list(res.keys())[0]
-            print(bullet)
 
             # itterate sprites
             for enemy in sprites:
@@ -394,13 +407,20 @@ while True:
 
                 if not enemy.sprite_is_dead:
                     bullet.kill()
-            
 
         if player_dead:
+
+            if music_fadeout == False:
+                battle_music.fadeout(1000)
+                music_fadeout = True
+
             player_dead_timer -= 0.1
 
         if player_dead_timer < 0:
+            menu_music.play(loops = -1)
+            play_sound_effect("game_over")
             game_active = False
+            music_fadeout = False
 
     else:
         if show_help:

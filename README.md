@@ -1,14 +1,22 @@
 # _Kjetil, The Game_
 
-> _not completed_
-
 ## This game is a birthday present for my dear friend Kjetil.
 
-Play as the protagonist Kjetil as he walking down the street of Oslo while bitchslapping hoes and assholes. <br>
-Fighting these public enemies will charge Kjetil with cum and diarrhea than can be used for special attacks. <br>
-These special attacks will come in handy in the final standof with the boss. <br>
-But be warned! If Kjetil gets filled up with cum and diarrhea, he will explode and the game is over <br>
+Play as the protagonist Kjetil as he walking down the street of Oslo while teaching bitches and asshoes a valuable lesson.
+
+Fighting different enemies gives different kind of bonuses. They all come in handy when facing off with a boss.
+
+### Credits
+
+- Main menu theme song: [8-Bit Theme - On the offensive, by Wolfgang ](https://opengameart.org/content/8-bit-theme-on-the-offensive)
+- Ingame background music: [Fast fight / battle music, by Ville Nousiainen / Xythe / mutkanto](https://opengameart.org/content/fast-fight-battle-music)
+- Soundeffects: [GEEffecx](https://opengameart.org/content/punch-slap-n-kick)
+
+- Graphics and and soundeffects created by me ^^
 
 ### Note:
 
-This is my first game ever, and probably my last using pygame.
+This is my first game ever, and probably my last using pygame. <br>
+There are tons of stuff i might done differently, but i leave it as it is. <br>
+
+> written with pyhton version. 3.9.7

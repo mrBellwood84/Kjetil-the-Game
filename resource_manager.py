@@ -1,5 +1,6 @@
 import os
 import pygame
+from random import randint
 
 
 # hold relative path sprite folder
@@ -77,3 +78,28 @@ def flip_surface_list(surface_list):
     
     # return result
     return result
+
+
+# plays a random hit sound effect
+def play_random_hit_sound():
+
+    # get random 
+    file = f'{randint(1, 18)}.ogg'
+    sound_path = os.path.join("resources","soundeffects","hits", file)
+
+    # play sound
+    sound = pygame.mixer.Sound(sound_path)
+    sound.set_volume(0.3)
+    sound.play()
+
+
+def play_sound_effect(effect_name, volume=1):
+
+    # get sound path
+    file = f'{effect_name}.ogg'
+    sound_path = os.path.join("resources","soundeffects", file)
+
+    # play sound
+    sound = pygame.mixer.Sound(sound_path)
+    sound.set_volume
+    sound.play()

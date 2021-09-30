@@ -1,5 +1,6 @@
+from random import randint
 from Modules.Enemies.EnemyReport import EnemyReport
-from resource_manager import flip_surface_list, get_sprite_surface
+from resource_manager import flip_surface_list, get_sprite_surface, play_random_hit_sound, play_sound_effect
 from Modules.settings import GameSettings
 import pygame, uuid
 
@@ -57,7 +58,9 @@ class Enemy(pygame.sprite.Sprite):
         self.sprite_health  = sprites_health[sprite_index]  # sprite health
         self.sprite_attack  = sprites_attack[sprite_index]  # sprite attack power
 
-        self.sprite_speed   = sprite_speeds[sprite_index]   # sprite movement speed
+        speeed_modifier = randint(-20,20) / 10              # create a random speed modifier
+
+        self.sprite_speed   = sprite_speeds[sprite_index] + speeed_modifier   # sprite movement speed
 
         self.sprite_killed  = False     # True only for the instance when sprite gets killed
         self.sprite_is_dead = False     # True if sprite is dead
@@ -104,6 +107,16 @@ class Enemy(pygame.sprite.Sprite):
         self.walk_animation_index   = 0     # index for walk animation
         self.attack_animation_index = 0     # index for attack animaton
         self.damage_animation_index = 0     # index for damage animation
+
+        # play spawn sound if boss
+        if sprite_index == 3:
+            play_sound_effect("arnold_spawn")
+        
+        if sprite_index == 4:
+            play_sound_effect("chuck_spawn")
+
+        
+        self.death_sound_effect = False     # set true for death sound effect
 
 
 
@@ -203,7 +216,9 @@ class Enemy(pygame.sprite.Sprite):
                 in_range = True
         
                                                                 # if attack was successful:
-        if in_range: self.attack_result = self.sprite_attack    # set attack result
+        if in_range: 
+            self.attack_result = self.sprite_attack    # set attack result
+            play_random_hit_sound()
         
 
     # handle animations, include damage report
@@ -213,6 +228,10 @@ class Enemy(pygame.sprite.Sprite):
             self.remove_timer -= 0.1        # start remove timer
 
             if self.sprite_index == 2:  # special handle for sprite index 2
+
+                if not self.death_sound_effect:
+                    play_sound_effect("fancypants_run")
+                    self.death_sound_effect = True
 
                 # get animation group
                 group = self.sprite_damage_left if self.orient_left else self.sprite_damage_right
