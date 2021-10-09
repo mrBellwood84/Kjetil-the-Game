@@ -29,6 +29,7 @@ class GameScene:
         self.shit_lvl       = 0
         self.cum_lvl        = 0
 
+
         # background music
         self.music = pygame.mixer.Sound(battle_music_path)
         self.music.set_volume(0.4)
@@ -39,6 +40,10 @@ class GameScene:
         self.sprites_on_screen  = 0
         self.boss_count_down    = randint(8,12)
 
+        # spawn control for fancy pants
+        self.fancypants             = 0         # hold amounts of fancypants on screen
+        self.non_fancypants_spawn   = 0         # amount of spawns between fancypants
+
         self.player_data    = PlayerData()  # hold player data
 
         self.end_count_down     = 6         # Countdown for play end
@@ -48,6 +53,7 @@ class GameScene:
         # add user event
         self.spawn_timer = pygame.USEREVENT + 1          # create spawn timer event
         pygame.time.set_timer(self.spawn_timer, 2000)    # set timer to event
+
 
         # boolean for running scene
         self.run_scene = True
@@ -66,38 +72,39 @@ class GameScene:
 
             self.handle_game_events()   # handle game events
 
+            self.fancypants = 0         # reset value for fancypants on screen value
+
             self.create_background()    # create background
             self.draw_game_score()      # draw game score
             self.draw_game_stats()      # draw game stats
-
-            self.handle_game_events()   # handle game events
 
 
             # -- HANDLE ENEMY SPRITES -- ##
             self.enemies.draw(App.SCREEN)   # draw sprites on screen
 
-            # itterate each sprite to gather reports
-            for sprite in self.enemies.sprites():
+            for sprite in self.enemies.sprites():       # itterate each sprite to gather reports
                 data = sprite.update(self.player_data)  # gather data
                 enemy_data.append(data)                 # apped data to list
 
+                if sprite.sprite_index == 2:            # check amounts of fancypants spawned
+                    self.fancypants += 1                # for spawn controll
+
             self.handle_enemy_data(enemy_data)          # handle enemy data 
             
-            
             ## -- HANDLE PLAYER -- ##
-            self.player.draw(App.SCREEN)        # draw player on sceen
+            self.player.draw(App.SCREEN)                # draw player on sceen
 
             # update sprite and collect data
             self.player_data = self.player.sprites()[0].update(enemy_data)  
 
             # handle updatet player data
-            self.handle_player_data()   # Handle data from player
+            self.handle_player_data()                   # Handle data from player
             
 
             # -- HANDLE PROJECTILES -- ##
-            self.projectiles.draw(App.SCREEN)       # draw projectiles
-            self.projectiles.update()               # update projectiles
-            self.handle_projectile_collision()      # handle projectile collisions
+            self.projectiles.draw(App.SCREEN)           # draw projectiles
+            self.projectiles.update()                   # update projectiles
+            self.handle_projectile_collision()          # handle projectile collisions
 
             # update screen and tick
             pygame.display.update()
@@ -190,17 +197,7 @@ class GameScene:
 
             if event.type == self.spawn_timer:
 
-                if (self.boss_count_down < 0):                 # if boss counter reach 0
-
-                    e = choice([3,4])                          # get random boss
-                    self.enemies.add(Enemy(e))                 # spawn boss
-                    self.boss_count_down = randint(8,12)       # reset boss spawn counter with random numer 
-
-                    return                                      # and return
-
-                if (self.sprites_on_screen < 3):    # if sprite numer lower than 3, spawn sprite
-                    e = choice([0,1,0,1,0,1,2])     # create random sprite type
-                    self.enemies.add(Enemy(e))      # spawn sprite
+                self.spawn_control()
 
 
     # handle enemy data
@@ -268,6 +265,52 @@ class GameScene:
 
             if not enemy.sprite_is_dead:    # if sprite is not dead
                 bullet.kill()
+
+
+    # controll enemey spawning
+    def spawn_control(self):
+
+        # arrays for random choice for spawning
+        regular         = [0,0,1,1,2]   # hold regular spawn choice
+        fancypants_high = [0,1,2]       # hold higher chance for fancypants
+        no_fancypants   = [0,1]         # prite only
+        boss_spawn      = [3,4]         # boss spawn only
+
+        # return if high number of sprites
+        if self.sprites_on_screen > 3:
+            print("no spawn")
+            return
+
+        # spawn boss if boss spawn counted down
+        if self.boss_count_down < 0:
+            self.enemies.add(Enemy(choice(boss_spawn)))     # spawn random boss
+            self.boss_count_down = randint(8,12)            # set new boss count down
+            return
+        
+        # dont spawn fancypants of exist on screen
+        if self.fancypants >= 1:
+            self.enemies.add(Enemy(choice(no_fancypants)))  # spawn random enemy sprite
+            self.non_fancypants_spawn += 1                  # increment non fancypants spawn
+            return
+        
+
+        # higher fancypants chance if low health or long time since last one
+        if self.player_data.health < 25 or self.non_fancypants_spawn > 8:
+            e = choice(fancypants_high)
+        # normal spawn
+        else:
+            e = choice(regular) 
+
+
+        if e == 2:                              # if random sprite is fancypants
+            self.non_fancypants_spawn = 0       # reset non fancy pants counter
+        else:                                   # else
+            self.non_fancypants_spawn += 1      # increment non fancypants counter
+
+        self.enemies.add(Enemy(e))              # spawn fancypants
+    
+
+
 
 
     # quit game scene loop and returning to menu screen
