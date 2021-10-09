@@ -1,4 +1,4 @@
-# _Kjetil, The Game_
+# _Kjetil, The Game, V.1.1_
 
 ## This game is a birthday present for my dear friend Kjetil.
 
@@ -17,6 +17,8 @@ Fighting different enemies gives different kind of bonuses. They all come in han
 ### Note:
 
 This is my first game ever, and probably my last using pygame. <br>
-There are tons of stuff i might done differently, but i leave it as it is. <br>
+
+- Version 1.0: Written as a script, quite messy
+- Version 1.1: Refactored to an application structure, no new features
 
 > written with pyhton version. 3.9.7
